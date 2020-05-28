@@ -247,8 +247,6 @@ def demo():
 		models,opts = prepare_private_training(init_model, train_loaders, args.workers, args.batch_size, args.alphas, args.lr)
 	else:
 		models,opts = prepare_training(init_model, train_loaders, args.workers)
-
-	training_loss = list()
 	
 	# Train all of our worker models on their local data, then combine and aggregate their models
 	for epoch in range(1,args.epochs+1):

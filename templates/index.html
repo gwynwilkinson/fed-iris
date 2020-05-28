@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+    <title>Python Flask Bucket List App</title>
+ 
+ 
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+ 
+ 
+</head>
+ 
+<body>
+ 
+    <div class="container">
+        <div class="header">
+            <nav>
+                <ul class="nav nav-pills pull-right">
+                    <li role="presentation" class="active"><a href="http://127.0.0.1:5000">Home</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+ 
+        <div class="jumbotron">
+            <h1>Iris Deep Learning App</h1>
+            <p class="lead"></p>
+			<p>
+				<form action="/echo" method="POST">
+					<div class="form-group">
+						<label for="workers">Number of workers</label>
+						<input name="workers" class="form-control" id="workers" aria-describedby="workersHelp" placeholder="Enter Number of Workers">
+						<small id="workersHelp" class="form-text text-muted">The number of workers to distribute the dataset and train models.</small>
+					</div>
+					<button type="submit" class="btn btn-primary">Submit</button>
+				</form>
+			</p>		
+        </div>			
+        			
+
+        <div class="row marketing">
+            <div class="col-lg-6">
+                {% if score %}
+				<h4>F1 Scores List</h4>
+                <p>
+					f1 score: {{ score }}
+				</p>
+ 				
+                <h4>F1 Scores Graph</h4>
+                <p><img src="/matplot.svg" alt="f1 score as svg" height="500"></p>
+ 				{% endif %}
+            </div>
+ 
+            
+ 
+        
+ 
+    </div>
+<footer class="footer">
+	<p>&copy; Gwyn Wilkinson</p>
+</footer>
+</body>
+ 
+</html>

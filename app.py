@@ -26,29 +26,30 @@ def main():
 @app.route("/echo", methods=['POST'])
 def echo():
 	
-	# initialise f1 score list and set no. of workers
-	session["f1_score"]=list()
+	# Get no. of workers from form
 	args.workers = int(request.form['workers'])
 	
-	# train & test 10 times and pass arguments
-	for i in range(10):
-		session["f1_score"].append(run_test(args))
+	# Run federated model training to get F1 scores list
+	session["f1_scores"] = run_test(args)
 	
-	# return same page with new f1 scores inserted
-	return render_template('index.html', score=session["f1_score"])
+	# return same page with new F1 scores inserted
+	return render_template('index.html', score=session["f1_scores"])
 
 # graph image rendering route
 @app.route("/matplot.svg")
 def plot_graph():
 	
 	# load f1 scores from session into local list
-	score_f1 = score=session["f1_score"]
+	score_f1 = score=session["f1_scores"]
 
 	# create matplotlib graph showing f1 scores
 	fig = Figure()
 	axis = fig.add_subplot(1, 1, 1)
 	x_points = range(len(score_f1))
 	axis.plot(x_points, [score_f1[x] for x in x_points])
+	axis.set_title('Federated Model - F1 Score History')
+	axis.set_ylabel('F1 Score')
+	axis.set_xlabel('Epoch')
 	
 	# initialise raw output for rendering graph as svg data
 	output = io.BytesIO()

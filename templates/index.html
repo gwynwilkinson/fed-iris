@@ -41,13 +41,13 @@
         <div class="row marketing">
             <div class="col-lg-6">
                 {% if score %}
+				<h4>F1 Scores Graph</h4>
+                <p><img src="/matplot.svg" alt="f1 score as svg" height="500"></p>
+
 				<h4>F1 Scores List</h4>
                 <p>
 					f1 score: {{ score }}
 				</p>
- 				
-                <h4>F1 Scores Graph</h4>
-                <p><img src="/matplot.svg" alt="f1 score as svg" height="500"></p>
  				{% endif %}
             </div>
  

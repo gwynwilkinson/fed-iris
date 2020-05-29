@@ -25,8 +25,8 @@ import seaborn as sns
 class Arguments:
     """Parameters for training"""
     def __init__(self):
-        self.epochs = 5
-        self.iterations = 5
+        self.epochs = 200
+        self.iterations = 1
         self.lr = 0.01
         self.shuffle_dataset = True
         self.batch_size = 8
@@ -233,45 +233,13 @@ def test(data_loader, model):
 	# print('Test set: Average loss: {:.4f}\n'.format(test_loss))
 	return test_loss
 
-# testing demo function to call all above functions and produce a federated learning model.
-def demo():
-
-	init_model = Net()
-
-	# Here we're using the Iris dataset - TODO change this for something more challenging
-	iris = load_iris()
-	train_loaders, test_loader = prepare_data(iris, args.shuffle_dataset, args.batch_size)
-	
+def select_prepare_training(init_model, train_loaders, args):
 	# Case switch based on whether or not we want to use DP (see the Arguments class)
 	if not args.disable_dp:
 		models,opts = prepare_private_training(init_model, train_loaders, args.workers, args.batch_size, args.alphas, args.lr)
 	else:
-		models,opts = prepare_training(init_model, train_loaders, args.workers)
-	
-	# Train all of our worker models on their local data, then combine and aggregate their models
-	for epoch in range(1,args.epochs+1):
-		for i in range(len(models)):
-		    train(models[i], opts[i], train_loaders[i], epoch, i, args.disable_verbose_training)
-	new_model = aggregate_models(models)
-
-	# Turn off pytorch autograd to run some scikit learn metrics (Precision, Recall, F1 score)
-	with torch.no_grad():
-		y_pred = new_model(torch.tensor(X_test).float())
-		y_pred = np.array(y_pred.argmax(1))
-		print(f"Precision = {precision_score(y_test, y_pred, average='micro')}")
-		print(f"Recall = {recall_score(y_test, y_pred, average='micro')}")
-		print(f"F1 score = {f1_score(y_test, y_pred, average='micro')}")
-
-		# Create a confusion matrix to see how well we perform on Iris
-		cm = confusion_matrix(y_test, y_pred)
-
-		# Create new matplotlib plot to display confusion matrix
-		plt.matshow(cm)
-		plt.title('Confusion Matrix')
-		plt.colorbar()
-		plt.ylabel('True label')
-		plt.xlabel('Predicted label')
-		plt.show()
+		models,opts = prepare_training(init_model, train_loaders, args.workers, args.lr)
+	return models,opts
 
 # Test run function called by web app
 def run_test(arguments):
@@ -280,31 +248,31 @@ def run_test(arguments):
 
 	# Here we're using the Iris dataset - TODO change this for something more challenging
 	iris = load_iris()
+	_, X_test, _, y_test = train_test_split(iris.data, iris.target, random_state=0, shuffle=arguments.shuffle_dataset)
 	train_loaders, test_loader = prepare_data(iris, arguments.shuffle_dataset, arguments.batch_size, arguments.workers)
 	
-	# Case switch based on whether or not we want to use DP (see the Arguments class)
-	if not arguments.disable_dp:
-		models,opts = prepare_private_training(init_model, train_loaders, arguments.workers, arguments.batch_size, arguments.alphas, arguments.lr)
-	else:
-		models,opts = prepare_training(init_model, train_loaders, arguments.workers, arguments.lr)
+	f1_scores = list()
 
-	training_loss = list()
+	# Case switch based on whether or not we want to use DP (see the Arguments class)
+	models,opts = select_prepare_training(init_model, train_loaders, arguments)
 
 	# Train all of our worker models on their local data, then combine and aggregate their models
 	for epoch in range(1,arguments.epochs+1):
 		for i in range(len(models)):
-		    train(models[i], opts[i], train_loaders[i], epoch, i, arguments.disable_verbose_training, arguments.disable_dp, arguments.delta)
-	new_model = aggregate_models(models)
+			train(models[i], opts[i], train_loaders[i], epoch, i, arguments.disable_verbose_training, arguments.disable_dp, arguments.delta)
+		new_model = aggregate_models(models)
+		models,opts = select_prepare_training(new_model, train_loaders, arguments)
 
-	# Disable pytorch autograd so we can calculate F1 Score metric
-	with torch.no_grad():
-		X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target, random_state=0, shuffle=arguments.shuffle_dataset)
-		y_pred = new_model(torch.tensor(X_test).float())
-		y_pred = np.array(y_pred.argmax(1))
-		score = float(f1_score(y_test, y_pred, average='micro'))
+		# Every 5 epochs record the F1 Score of the aggregated model
+		if (epoch%5)==0:
+			with torch.no_grad():
+				y_pred = new_model(torch.tensor(X_test).float())
+				y_pred = np.array(y_pred.argmax(1))
+				f1_scores.append(f1_score(y_test, y_pred, average='micro'))
+
 
 	# This will be passed to the webapp script which will render it in the template
-	return score
+	return f1_scores
 
 
 
